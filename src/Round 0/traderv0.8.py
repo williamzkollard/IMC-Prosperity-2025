@@ -129,8 +129,8 @@ class Trader:
 
     def _get_orders_rainforest_resin(self, state: TradingState):
         
-        prices = pd.DataFrame.from_records(self.rainforest_resin)
         
+        prices = pd.DataFrame.from_records(self.rainforest_resin)
         mid_price_vw = prices['mid_price_vw'].iloc[-1]
         current_pos = state.position["RAINFOREST_RESIN"] if "RAINFOREST_RESIN" in state.position else 0
         t = state.timestamp
@@ -177,8 +177,8 @@ class Trader:
 
         bid, ask = self._stoikov_bidask(mid_price_vw, current_pos, 0, t, gamma, sigma, k)
 
-        bid_amt = 20 - current_pos
-        ask_amt = -20 - current_pos
+        bid_amt = min(50 - current_pos, 10)
+        ask_amt = -min(50 + current_pos, 10)
 
 
         orders = [
@@ -209,6 +209,7 @@ class Trader:
 
 
         return orders, conversions, trader_data
+
 
 
     
