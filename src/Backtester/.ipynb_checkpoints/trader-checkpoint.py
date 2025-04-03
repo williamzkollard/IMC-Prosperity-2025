@@ -453,7 +453,7 @@ class Trader:
         mid_price_vw=fair_value,
         current_pos=position,
         target_pos=0,
-        timestamp= timestamp,
+        timestamp= state.timestamp,
         gamma=0.1,     # example value
         sigma=0.002,   # example volatility
         k=1.5          # example depth sensitivity
@@ -626,8 +626,8 @@ class Trader:
         conversions = 1
         traderData = jsonpickle.encode(traderObject)
         
-        return result, conversions, traderData
-        #return result
+       # return result, conversions, traderData
+        return result
 
 
 #trader = Trader()
