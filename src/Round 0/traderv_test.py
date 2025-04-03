@@ -22,6 +22,97 @@ from datamodel import Listing, Observation, Order, OrderDepth, ProsperityEncoder
 
 
 
+
+
+listings = {
+	"PRODUCT1": Listing(
+		symbol="PRODUCT1", 
+		product="PRODUCT1", 
+		denomination= "SEASHELLS"
+	),
+	"PRODUCT2": Listing(
+		symbol="PRODUCT2", 
+		product="PRODUCT2", 
+		denomination = "SEASHELLS"
+	)
+}
+
+order_depths = {
+	"PRODUCT1": OrderDepth(
+		buy_orders={10: 7, 9: 5},
+		sell_orders={12: -5, 13: -3}
+	),
+	"PRODUCT2": OrderDepth(
+		buy_orders={142: 3, 141: 5},
+		sell_orders={144: -5, 145: -8}
+	),	
+}
+
+own_trades = {
+	"PRODUCT1": [
+		Trade(
+			symbol="PRODUCT1",
+			price=11,
+			quantity=4,
+			buyer="SUBMISSION",
+			seller="",
+			timestamp=1000
+		),
+		Trade(
+			symbol="PRODUCT1",
+			price=12,
+			quantity=3,
+			buyer="SUBMISSION",
+			seller="",
+			timestamp=1000
+		)
+	],
+	"PRODUCT2": [
+		Trade(
+			symbol="PRODUCT2",
+			price=143,
+			quantity=2,
+			buyer="",
+			seller="SUBMISSION",
+			timestamp=1000
+		),
+	]
+}
+
+market_trades = {
+	"PRODUCT1": [],
+	"PRODUCT2": []
+}
+
+position = {
+	"PRODUCT1": 10,
+	"PRODUCT2": -7
+}
+
+observations = {}
+traderData = ""
+
+state = TradingState(
+	traderData,
+	timestamp,
+  listings,
+	order_depths,
+	own_trades,
+	market_trades,
+	position,
+	observations
+)
+
+
+
+
+
+
+
+
+
+
+
 class Trader:
 
     def __init__(self):
@@ -98,9 +189,9 @@ class Trader:
             data['mid_price_vw'] = self._vw_mid_price(data)
 
 
-            if product == "STARFRUIT":
+            if product == "RAINFOREST_RESIN":
                 self.rainforest_resin.append(data) #data is a dictionary 
-            elif product == "AMETHYSTS":
+            elif product == "KELP":
                 self.kelp.append(data)
 
 
@@ -134,10 +225,13 @@ class Trader:
 
     def _get_orders_rainforest_resin(self, state: TradingState):
 
+        
         prices = pd.DataFrame.from_records(self.rainforest_resin)
+
+        print(prices)
         
         mid_price_vw = prices['mid_price_vw'].iloc[-1]
-        current_pos = state.position["STARFRUIT"] if "STARFRUIT" in state.position else 0
+        current_pos = state.position["RAINFOREST_RESIN"] if "RAINFOREST_RESIN" in state.position else 0
         t = state.timestamp
 
         # shared parameters for Stoikov-Anelladeva Model
@@ -157,8 +251,8 @@ class Trader:
 
 
         orders = [
-            Order("STARFRUIT", int(ask), ask_amt),
-            Order("STARFRUIT", int(bid), bid_amt),
+            Order("RAINFOREST_RESIN", int(ask), ask_amt),
+            Order("RAINFOREST_RESIN", int(bid), bid_amt),
         ]
 
         return orders
@@ -168,7 +262,7 @@ class Trader:
         
         prices = pd.DataFrame.from_records(self.kelp)
         mid_price_vw = prices['mid_price_vw'].iloc[-1]
-        current_pos = state.position["AMETHYSTS"] if "AMETHYSTS" in state.position else 0
+        current_pos = state.position["KELP"] if "KELP" in state.position else 0
         t = state.timestamp
 
         # shared parameters for Stoikov-Anelladeva Model
@@ -187,8 +281,8 @@ class Trader:
 
 
         orders = [
-            Order("AMETHYSTS", int(ask), ask_amt),
-            Order("AMETHYSTS", int(bid), bid_amt),
+            Order("KELP", int(ask), ask_amt),
+            Order("KELP", int(bid), bid_amt),
         ]
         return orders
 
@@ -212,20 +306,17 @@ class Trader:
             # get orders for KELP
         order_kelp = self._get_orders_kelp(state)
         if order_kelp:
-            orders["AMETHYSTS"] = order_kelp
-
+            orders["KELP"] = order_kelp
 
         return orders, conversions, trader_data
 
 
 
-    
 
+trader = Trader()
+iteration = trader.run(state)
 
-#trader = Trader()
-#iteration = trader.run(state)
-
-#print(iteration)
+iteration
 
 
 
