@@ -32,7 +32,7 @@ PARAMS = {
         "clear_width": 0,
         "prevent_adverse": True,  # Avoid large trades that could move the market against us
         "adverse_volume": 15,  # Maximum volume to avoid for adverse selection
-        "reversion_beta": -0.229,  # Mean reversion parameter
+        "reversion_beta": 0.2145,  # Mean reversion parameter
         "disregard_edge": 1,
         "join_edge": 0,
         "default_edge": 1,
