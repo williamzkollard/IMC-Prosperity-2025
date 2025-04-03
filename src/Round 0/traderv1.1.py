@@ -24,8 +24,8 @@ PARAMS = {
         "clear_width": 0,  # Threshold for clearing orders
         "disregard_edge": 1,  # Ignore orders too close to fair value
         "join_edge": 2,  # Join existing orders within this range
-        "default_edge": 4,  # Default spread if no other condition applies
-        "soft_position_limit": 10,  # Soft limit on how many units we hold before adjusting strategy
+        "default_edge": 2,  # Default spread if no other condition applies
+        "soft_position_limit": 12,  # Soft limit on how many units we hold before adjusting strategy
     },
     Product.KELP: {
         "take_width": 1,
