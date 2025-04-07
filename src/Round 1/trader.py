@@ -510,7 +510,7 @@ class Trader:
                     state.order_depths[Product.SQUID_INK],
                     ink_fair_value,
                     self.params[Product.SQUID_INK]["take_width"],
-                    kelp_position,
+                    ink_position,
                     self.params[Product.SQUID_INK]["prevent_adverse"],
                     self.params[Product.SQUID_INK]["adverse_volume"],
                 )
