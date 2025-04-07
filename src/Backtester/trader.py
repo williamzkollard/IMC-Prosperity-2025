@@ -4,105 +4,12 @@
 #KELP
 #Price has gone up and down throughout history (mean reverting)
 
-from datamodel import Listing, Observation, Order, OrderDepth, ProsperityEncoder, Symbol, Trade, TradingState
+from datamodel import OrderDepth, UserId, TradingState, Order
 from typing import List
 import string
 import jsonpickle
 import numpy as np
 import math
-
-
-
-
-""""
-timestamp = 1100
-
-listings = {
-	"RAINFOREST_RESIN": Listing(
-		symbol="RAINFOREST_RESIN", 
-		product="RAINFOREST_RESIN", 
-		denomination= "SEASHELLS"
-	),
-	"KELP": Listing(
-		symbol="KELP", 
-		product="KELP", 
-		denomination = "SEASHELLS"
-	)
-}
-
-order_depths = {
-	"RAINFOREST_RESIN": OrderDepth(
-		buy_orders={10: 7, 9: 5},
-		sell_orders={12: -5, 13: -3}
-	),
-	"KELP": OrderDepth(
-		buy_orders={142: 3, 141: 5},
-		sell_orders={144: -5, 145: -8}
-	),	
-}
-
-own_trades = {
-	"RAINFOREST_RESIN": [
-		Trade(
-			symbol="RAINFOREST_RESIN",
-			price=11,
-			quantity=4,
-			buyer="SUBMISSION",
-			seller="",
-			timestamp=1000
-		),
-		Trade(
-			symbol="RAINFOREST_RESIN",
-			price=12,
-			quantity=3,
-			buyer="SUBMISSION",
-			seller="",
-			timestamp=1000
-		)
-	],
-	"KELP": [
-		Trade(
-			symbol="KELP",
-			price=143,
-			quantity=2,
-			buyer="",
-			seller="SUBMISSION",
-			timestamp=1000
-		),
-	]
-}
-
-market_trades = {
-	"RAINFOREST_RESIN": [],
-	"KELP": []
-}
-
-position = {
-	"RAINFOREST_RESIN": 10,
-	"KELP": -7
-}
-
-observations = {}
-traderData = ""
-
-
-state = TradingState(
-	traderData,
-	timestamp,
-  listings,
-	order_depths,
-	own_trades,
-	market_trades,
-	position,
-	observations
-)
-
-
-"""
-
-
-
-
 
 # Define the available products for trading
 class Product:
@@ -117,15 +24,15 @@ PARAMS = {
         "clear_width": 0,  # Threshold for clearing orders
         "disregard_edge": 1,  # Ignore orders too close to fair value
         "join_edge": 2,  # Join existing orders within this range
-        "default_edge": 4,  # Default spread if no other condition applies
-        "soft_position_limit": 10,  # Soft limit on how many units we hold before adjusting strategy
+        "default_edge": 2,  # Default spread if no other condition applies
+        "soft_position_limit": 12,  # Soft limit on how many units we hold before adjusting strategy
     },
     Product.KELP: {
         "take_width": 1,
         "clear_width": 0,
         "prevent_adverse": True,  # Avoid large trades that could move the market against us
         "adverse_volume": 15,  # Maximum volume to avoid for adverse selection
-        "reversion_beta": -0.229,  # Mean reversion parameter
+        "reversion_beta": 0.2145,  # Mean reversion parameter
         "disregard_edge": 1,
         "join_edge": 0,
         "default_edge": 1,
@@ -140,33 +47,6 @@ class Trader:
 
         # Define position limits for each product
         self.LIMIT = {Product.RAINFOREST_RESIN: 50, Product.KELP: 50}
-
-
-
-
-    def _stoikov_bidask(
-        self, 
-        mid_price_vw: int,  # mid price
-        current_pos: int,  # current position
-        target_pos: int,  # target position
-        timestamp: int,  # timestamp
-        gamma: float ,  # risk aversion
-        sigma: float,  # volatility of price
-        k: float
-        ):
-        
-        q = current_pos - target_pos
-        total_timestamps = 2000000
-        T = 1
-        t = timestamp / total_timestamps
-        sigma = np.sqrt(sigma)  # convert variance to std dev
-
-        # calculate ref price using Stoikov model
-        ref_price = mid_price_vw - q * gamma * sigma ** 2 * (T-t)
-        stoikov_spread = gamma * sigma ** 2 * (T - t) + 2 / gamma * np.log(1 + gamma / k)
-        bid, ask = ref_price - stoikov_spread / 2, ref_price + stoikov_spread / 2
-
-        return np.floor(bid), np.ceil(ask)       
 
     def take_best_orders(
         self,
@@ -435,7 +315,6 @@ class Trader:
         self,
         product,
         order_depth: OrderDepth,
-        timestamp: int,
         fair_value: float,
         position: int,
         buy_order_volume: int,
@@ -447,19 +326,7 @@ class Trader:
         soft_position_limit: int = 0,  # Threshold to modify orders based on position
     ):
         orders: List[Order] = []
-
-        # Use Stoikov model for base pricing 
-        base_bid, base_ask = self._stoikov_bidask(
-        mid_price_vw=fair_value,
-        current_pos=position,
-        target_pos=0,
-        timestamp= timestamp,
-        gamma=0.1,     # example value
-        sigma=0.002,   # example volatility
-        k=1.5          # example depth sensitivity
-    )
-
-
+        
         # Identify ask prices above the fair value, considering the disregard edge
         asks_above_fair = [
             price
@@ -479,14 +346,8 @@ class Trader:
         best_bid_below_fair = max(bids_below_fair) if len(bids_below_fair) > 0 else None
         
         # Set default bid and ask prices based on fair value and default edge
-        #ask = round(fair_value + default_edge)
-        #bid = round(fair_value - default_edge)
-
-        # Set stoikov bid ask
-
-        ask = int(base_ask)
-        bid = int(base_bid)
-
+        ask = round(fair_value + default_edge)
+        bid = round(fair_value - default_edge)
         
         # Adjust ask price if there's an order close enough to fair value
         if best_ask_above_fair is not None:
@@ -560,7 +421,6 @@ class Trader:
             resin_make_orders, _, _ = self.make_orders(
                 Product.RAINFOREST_RESIN,
                 state.order_depths[Product.RAINFOREST_RESIN],
-                state.timestamp,
                 self.params[Product.RAINFOREST_RESIN]["fair_value"],
                 resin_position,
                 buy_order_volume,
@@ -610,7 +470,6 @@ class Trader:
             kelp_make_orders, _, _ = self.make_orders(
                 Product.KELP,
                 state.order_depths[Product.KELP],
-                state.timestamp,
                 kelp_fair_value,
                 kelp_position,
                 buy_order_volume,
@@ -627,12 +486,3 @@ class Trader:
         traderData = jsonpickle.encode(traderObject)
         
         return result, conversions, traderData
-        #return result
-
-
-#trader = Trader()
-#iteration = trader.run(state)
-
-
-#print(iteration[0]["RAINFOREST_RESIN"])
-#print(iteration)

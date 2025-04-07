@@ -435,7 +435,6 @@ class Trader:
         self,
         product,
         order_depth: OrderDepth,
-        timestamp: int,
         fair_value: float,
         position: int,
         buy_order_volume: int,
@@ -448,15 +447,12 @@ class Trader:
     ):
         orders: List[Order] = []
 
-
-        #Need to include rolling volatiliy
-
         # Use Stoikov model for base pricing 
         base_bid, base_ask = self._stoikov_bidask(
         mid_price_vw=fair_value,
         current_pos=position,
         target_pos=0,
-        timestamp= timestamp,
+        timestamp= state.timestamp,
         gamma=0.1,     # example value
         sigma=0.002,   # example volatility
         k=1.5          # example depth sensitivity
@@ -563,7 +559,6 @@ class Trader:
             resin_make_orders, _, _ = self.make_orders(
                 Product.RAINFOREST_RESIN,
                 state.order_depths[Product.RAINFOREST_RESIN],
-                state.timestamp,
                 self.params[Product.RAINFOREST_RESIN]["fair_value"],
                 resin_position,
                 buy_order_volume,
@@ -613,7 +608,6 @@ class Trader:
             kelp_make_orders, _, _ = self.make_orders(
                 Product.KELP,
                 state.order_depths[Product.KELP],
-                state.timestamp,
                 kelp_fair_value,
                 kelp_position,
                 buy_order_volume,
@@ -629,8 +623,8 @@ class Trader:
         conversions = 1
         traderData = jsonpickle.encode(traderObject)
         
-        return result, conversions, traderData
-        #return result
+       # return result, conversions, traderData
+        return result
 
 
 #trader = Trader()
