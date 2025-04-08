@@ -1,6 +1,7 @@
 from datamodel import OrderDepth, UserId, TradingState, Order, Listing, Trade
 from typing import List, Dict
 import string
+import pandas as pd
 import jsonpickle
 import numpy as np
 import math
@@ -19,18 +20,18 @@ PARAMS = {
         "clear_width": 0,
         "disregard_edge": 1,
         "join_edge": 2,
-        "default_edge": 4,
-        "soft_position_limit": 10,
+        "default_edge": 2,
+        "soft_position_limit": 12,
     },
     Product.KELP: {
         "take_width": 1,
-        "clear_width": 0,
+        "clear_width": -0.25,
         "prevent_adverse": True,
-        "adverse_volume": 15,
+        "adverse_volume": 19,
         "reversion_beta": -0.229,
         "disregard_edge": 1,
-        "join_edge": 0,
-        "default_edge": 1,
+        "join_edge": 3,
+        "default_edge": 4,
         "arima_window": 30,        # Larger window for AR(2)-like approach
         "auto_reg_1" : 0.9, 
         "auto_reg_2" : 0.7
@@ -38,16 +39,16 @@ PARAMS = {
 
     Product.SQUID_INK: {
         "take_width": 1,
-        "clear_width": 0,
+        "clear_width": -0.25,
         "prevent_adverse": True,
-        "adverse_volume": 15,
+        "adverse_volume": 18,
         "reversion_beta": -0.25,
         "disregard_edge": 1,
-        "join_edge": 0,
-        "default_edge": 1,
+        "join_edge": 3,
+        "default_edge": 5,
         "arima_window": 30,        # Larger window for AR(2)-like approach
-        "auto_reg_1" : 0.9, 
-        "auto_reg_2" : 0.7
+        "auto_reg_1" : 0.7,
+        "auto_reg_2" : 0.5
     }
 }
 
@@ -286,7 +287,7 @@ class Trader:
             diff2.append(diffs[i] - diffs[i-1])
         avg_diff2 = np.mean(diff2) if len(diff2) > 0 else 0
 
-        arima_component = self.params[Product.KELP]["auto_reg_1"] * avg_diff + self.params[Product.KELP]["auto_reg_1"] * avg_diff2 
+        arima_component = self.params[Product.KELP]["auto_reg_1"] * avg_diff + self.params[Product.KELP]["auto_reg_2"] * avg_diff2
 
 
         # Combine them:
@@ -309,20 +310,20 @@ class Trader:
 
             filtered_ask = [
                 price for price in order_depth.sell_orders.keys()
-                if abs(order_depth.sell_orders[price]) >= self.params[Product.KELP]["adverse_volume"]
+                if abs(order_depth.sell_orders[price]) >= self.params[Product.SQUID_INK]["adverse_volume"]
             ]
             filtered_bid = [
                 price for price in order_depth.buy_orders.keys()
-                if abs(order_depth.buy_orders[price]) >= self.params[Product.KELP]["adverse_volume"]
+                if abs(order_depth.buy_orders[price]) >= self.params[Product.SQUID_INK]["adverse_volume"]
             ]
             mm_ask = min(filtered_ask) if len(filtered_ask) > 0 else None
             mm_bid = max(filtered_bid) if len(filtered_bid) > 0 else None
 
             if mm_ask is None or mm_bid is None:
-                if traderObject.get("kelp_last_price", None) is None:
+                if traderObject.get("squid_ink_last_price", None) is None:
                     mid_price = (best_ask + best_bid) / 2
                 else:
-                    mid_price = traderObject["kelp_last_price"]
+                    mid_price = traderObject["squid_ink_last_price"]
             else:
                 mid_price = (mm_ask + mm_bid) / 2
 
@@ -483,25 +484,10 @@ class Trader:
 
         # If user wants to tilt based on position
         if manage_position:
-
-            
-
-            sigma = pd.to_numeric(
-            prices["mid_price_vw"].rolling(50, min_periods=5).var().iloc[-1]
-        )
-
-            """
             if position > soft_position_limit:
-                # If we are heavily long, shift our ask slightly cheaper to reduce position
-                ask = max(ask - 1, 1)
-            elif position < -soft_position_limit:
-                # If we are heavily short, shift our bid up slightly
-                bid += 1
-
-            """
-
-
-
+                ask -= 1  # Reduce ask price to sell faster
+            elif position < -1 * soft_position_limit:
+                bid += 1  # Increase bid price to buy faster
 
 
         buy_order_volume, sell_order_volume = self.market_make(
@@ -575,7 +561,7 @@ class Trader:
                 self.params[Product.RAINFOREST_RESIN]["join_edge"],
                 self.params[Product.RAINFOREST_RESIN]["default_edge"],
                 True,
-                self.params[Product.RAINFOREST_RESIN]["soft_position_limit"],
+                self.params[Product.RAINFOREST_RESIN]["soft_position_limit"]
             )
             result[Product.RAINFOREST_RESIN] = (
                 resin_take_orders + resin_clear_orders + resin_make_orders
