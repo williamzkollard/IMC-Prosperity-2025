@@ -54,12 +54,20 @@ class Order:
     def __repr__(self) -> str:
         return "(" + self.symbol + ", " + str(self.price) + ", " + str(self.quantity) + ")"
     
-
+""""
 class OrderDepth:
 
     def __init__(self):
         self.buy_orders: Dict[int, int] = {}
         self.sell_orders: Dict[int, int] = {}
+"""
+
+
+class OrderDepth:
+
+    def __init__(self, sell_orders=None, buy_orders=None):
+        self.buy_orders: Dict[int, int] = buy_orders if buy_orders is not None else {}
+        self.sell_orders: Dict[int, int] = sell_orders if sell_orders is not None else {}
 
 
 class Trade:
