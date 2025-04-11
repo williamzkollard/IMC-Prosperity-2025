@@ -56,18 +56,18 @@ PARAMS = {
         "slope_threshold": 0.3
     },
     Product.SPREAD1: {
-        "default_spread_mean": 379.50439988484239,
-        "default_spread_std": 76.07966,
+        "default_spread_mean": 45,
+        "default_spread_std": 82,
         "spread_std_window": 45,
         "zscore_threshold": 7,
         "target_position": 58,
     },
     Product.SPREAD2: {
         "default_spread_mean": 379.50439988484239,
-        "default_spread_std": 76.07966,
+        "default_spread_std": 55,
         "spread_std_window": 45,
         "zscore_threshold": 7,
-        "target_position": 58,
+        "target_position": 95,
     },
 }
 
