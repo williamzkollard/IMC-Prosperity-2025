@@ -28,13 +28,13 @@ PARAMS = {
         "clear_width": 0,
         "prevent_adverse": True,
         "adverse_volume": 15,
-        "reversion_beta": -0.229,
+        "reversion_beta": -0.8,
         "disregard_edge": 1,
         "join_edge": 0,
         "default_edge": 1,
         "arima_window": 30,        # Larger window for AR(2)-like approach
-        "auto_reg_1" : 0.9, 
-        "auto_reg_2" : 0.7
+        "auto_reg_1" : 0, 
+        "auto_reg_2" : 0
     },
 
     Product.SQUID_INK: {
@@ -42,13 +42,13 @@ PARAMS = {
         "clear_width": 0,
         "prevent_adverse": True,
         "adverse_volume": 15,
-        "reversion_beta": -0.25,
+        "reversion_beta": 0.8,
         "disregard_edge": 1,
         "join_edge": 0,
         "default_edge": 1,
         "arima_window": 30,        # Larger window for AR(2)-like approach
-        "auto_reg_1" : 0.9, 
-        "auto_reg_2" : 0.7
+        "auto_reg_1" : 0, 
+        "auto_reg_2" : 0
     }
 }
 
@@ -491,8 +491,6 @@ class Trader:
             elif position < -soft_position_limit:
                 # If we are heavily short, shift our bid up slightly
                 bid += 1
-
-
 
 
 
