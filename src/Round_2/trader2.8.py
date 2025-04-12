@@ -175,9 +175,9 @@ PARAMS = {
         "scaling_pct": 0.01 #optimised / add desired volume
     },
     Product.SPREAD1: {
-        "default_spread_mean": 45,
+        "default_spread_mean": 40,
         "default_spread_std": 82,
-        "spread_std_window": 45,
+        "spread_std_window": 38,
         "zscore_threshold": 7,
         "zscore_exit_threshold": 3,
         "target_position": 58,
