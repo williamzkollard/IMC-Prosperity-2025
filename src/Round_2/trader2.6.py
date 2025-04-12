@@ -857,7 +857,7 @@ class Trader:
         return None
 
     ########################################################################
-    #                     ORDER & POSITION METHODS
+    #                     ORDER & POSITION METHODS for KELP & RESIN
     ########################################################################
     def take_orders(
         self,
@@ -989,6 +989,11 @@ class Trader:
         if len(traderObject[key]) > 50:
             traderObject[key].pop(0)
 
+
+
+
+
+
     ########################################################################
     #                              RUN METHOD
     ########################################################################
@@ -1004,7 +1009,7 @@ class Trader:
         result = {}
 
         ####################################################################
-        #                RAINFOREST_RESIN (kept identical)
+        #                RAINFOREST_RESIN ORDERS
         ####################################################################
         if (Product.RAINFOREST_RESIN in self.params 
             and Product.RAINFOREST_RESIN in state.order_depths):
@@ -1043,7 +1048,7 @@ class Trader:
             )
 
         ####################################################################
-        #                KELP (kept identical)
+        #                KELP ORDERS
         ####################################################################
         if (Product.KELP in self.params 
             and Product.KELP in state.order_depths):
@@ -1086,7 +1091,7 @@ class Trader:
                 )
 
         ####################################################################
-        #                SQUID_INK (IMPROVED)
+        #                SQUID_INK ORDERS
         ####################################################################
         if Product.SQUID_INK in self.params and Product.SQUID_INK in state.order_depths:
             squid_ink_position = state.position.get(Product.SQUID_INK, 0)
@@ -1110,6 +1115,9 @@ class Trader:
 
 
 
+   ####################################################################
+        #                SPREAD 1 ORDERS
+   ####################################################################
 
         if Product.SPREAD1 not in traderObject:
             traderObject[Product.SPREAD1] = {
@@ -1136,6 +1144,12 @@ class Trader:
             result[Product.DJEMBES] = spread_orders[Product.DJEMBES]
             #result[Product.PICNIC_BASKET1] = spread_orders[Product.PICNIC_BASKET1]
 
+
+
+    ####################################################################
+            #                SPREAD 2 ORDERS
+    ####################################################################
+
         if Product.SPREAD2 not in traderObject:
             traderObject[Product.SPREAD2] = {
                 "spread_history": [],
@@ -1160,6 +1174,8 @@ class Trader:
             result[Product.JAMS] = spread_orders[Product.JAMS]
             #result[Product.PICNIC_BASKET2] = spread_orders[Product.PICNIC_BASKET2]
 
+
+
         ####################################################################
         #       Update price history for logs (optional debugging)
         ####################################################################
@@ -1168,6 +1184,8 @@ class Trader:
                 mid_price = self.calculate_mid_price(state.order_depths[product])
                 if mid_price is not None:
                     self.update_price_history(product, mid_price, traderObject)
+
+
 
         ####################################################################
         #       Final Return
