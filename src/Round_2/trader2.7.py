@@ -60,6 +60,7 @@ PARAMS = {
         "default_spread_std": 82,
         "spread_std_window": 45,
         "zscore_threshold": 7,
+        "zscore_exit_threshold": 3,
         "target_position": 58,
     },
     Product.SPREAD2: {
@@ -67,6 +68,7 @@ PARAMS = {
         "default_spread_std": 55,
         "spread_std_window": 45,
         "zscore_threshold": 7,
+        "zscore_exit_threshold": 3,
         "target_position": 95,
     },
 }
@@ -621,73 +623,8 @@ class Trader:
 
         return component_orders
 
-    """
-    def execute_spread_orders_basket1(
-        self,
-        target_position: int,
-        basket_position: int,
-        order_depths: Dict[str, OrderDepth],
-        ):
+   
 
-        if target_position == basket_position:
-            return None
-
-        target_quantity = abs(target_position - basket_position)
-        basket_order_depth = order_depths[Product.PICNIC_BASKET1]
-        synthetic_order_depth = self.get_synthetic_basket1_order_depth(order_depths)
-
-        if target_position > basket_position:
-            basket_ask_price = min(basket_order_depth.sell_orders.keys())
-            basket_ask_volume = abs(basket_order_depth.sell_orders[basket_ask_price])
-
-            synthetic_bid_price = max(synthetic_order_depth.buy_orders.keys())
-            
-            synthetic_bid_volume = abs(
-                synthetic_order_depth.buy_orders[synthetic_bid_price]
-            )
-
-            orderbook_volume = min(basket_ask_volume, synthetic_bid_volume)
-            execute_volume = min(orderbook_volume, target_quantity)
-
-            basket_orders = [
-                Order(Product.PICNIC_BASKET1, basket_ask_price, execute_volume)
-            ]
-            synthetic_orders = [
-                Order(Product.SYNTHETIC1, synthetic_bid_price, -execute_volume)
-            ]
-
-            aggregate_orders = self.convert_synthetic_basket1_orders(
-                synthetic_orders, order_depths
-            )
-            aggregate_orders[Product.PICNIC_BASKET1] = basket_orders
-            return aggregate_orders
-
-        else:
-            basket_bid_price = max(basket_order_depth.buy_orders.keys())
-            basket_bid_volume = abs(basket_order_depth.buy_orders[basket_bid_price])
-
-            synthetic_ask_price = min(synthetic_order_depth.sell_orders.keys())
-
-            synthetic_ask_volume = abs(
-                synthetic_order_depth.sell_orders[synthetic_ask_price]
-            )
-
-            orderbook_volume = min(basket_bid_volume, synthetic_ask_volume)
-            execute_volume = min(orderbook_volume, target_quantity)
-
-            basket_orders = [
-                Order(Product.PICNIC_BASKET1, basket_bid_price, -execute_volume)
-            ]
-            synthetic_orders = [
-                Order(Product.SYNTHETIC1, synthetic_ask_price, execute_volume)
-            ]
-
-            aggregate_orders = self.convert_synthetic_basket1_orders(
-                synthetic_orders, order_depths
-            )
-            aggregate_orders[Product.PICNIC_BASKET1] = basket_orders
-            return aggregate_orders
-    """
 
     def execute_spread_orders_basket1(
         self,
@@ -701,7 +638,6 @@ class Trader:
         
         if Product.PICNIC_BASKET1 not in order_depths:
             return {}
-
 
         target_quantity = abs(target_position - basket_position)
         basket_order_depth = order_depths[Product.PICNIC_BASKET1]
@@ -749,29 +685,31 @@ class Trader:
         return aggregate_orders
 
         
-
-
         
     def execute_spread_orders_basket2(
         self,
         target_position: int,
         basket_position: int,
         order_depths: Dict[str, OrderDepth],
+        include_basket: bool = True,
         ):
 
         if target_position == basket_position:
             return None
+        
+        if Product.PICNIC_BASKET2 not in order_depths:
+            return {}
 
         target_quantity = abs(target_position - basket_position)
         basket_order_depth = order_depths[Product.PICNIC_BASKET2]
         synthetic_order_depth = self.get_synthetic_basket2_order_depth(order_depths)
 
         if target_position > basket_position:
+            # Going long: buy basket, sell synthetic
             basket_ask_price = min(basket_order_depth.sell_orders.keys())
             basket_ask_volume = abs(basket_order_depth.sell_orders[basket_ask_price])
 
             synthetic_bid_price = max(synthetic_order_depth.buy_orders.keys())
-            
             synthetic_bid_volume = abs(
                 synthetic_order_depth.buy_orders[synthetic_bid_price]
             )
@@ -779,44 +717,35 @@ class Trader:
             orderbook_volume = min(basket_ask_volume, synthetic_bid_volume)
             execute_volume = min(orderbook_volume, target_quantity)
 
-            basket_orders = [
-                Order(Product.PICNIC_BASKET2, basket_ask_price, execute_volume)
-            ]
-            synthetic_orders = [
-                Order(Product.SYNTHETIC2, synthetic_bid_price, -execute_volume)
-            ]
 
-            aggregate_orders = self.convert_synthetic_basket2_orders(
-                synthetic_orders, order_depths
-            )
-            aggregate_orders[Product.PICNIC_BASKET2] = basket_orders
-            return aggregate_orders
 
+            basket_orders = []
+            if include_basket:
+                basket_orders = [Order(Product.PICNIC_BASKET2, basket_ask_price, execute_volume)]
+            synthetic_orders = [Order(Product.SYNTHETIC2, synthetic_bid_price, -execute_volume)]
         else:
+            # Going short: sell basket, buy synthetic
             basket_bid_price = max(basket_order_depth.buy_orders.keys())
             basket_bid_volume = abs(basket_order_depth.buy_orders[basket_bid_price])
 
             synthetic_ask_price = min(synthetic_order_depth.sell_orders.keys())
-
-            synthetic_ask_volume = abs(
-                synthetic_order_depth.sell_orders[synthetic_ask_price]
-            )
+            synthetic_ask_volume = abs(synthetic_order_depth.sell_orders[synthetic_ask_price])
 
             orderbook_volume = min(basket_bid_volume, synthetic_ask_volume)
             execute_volume = min(orderbook_volume, target_quantity)
 
-            basket_orders = [
-                Order(Product.PICNIC_BASKET2, basket_bid_price, -execute_volume)
-            ]
-            synthetic_orders = [
-                Order(Product.SYNTHETIC2, synthetic_ask_price, execute_volume)
-            ]
+            basket_orders = []
+            if include_basket:
+                basket_orders = [Order(Product.PICNIC_BASKET2, basket_bid_price, -execute_volume)]
 
-            aggregate_orders = self.convert_synthetic_basket2_orders(
-                synthetic_orders, order_depths
-            )
+            synthetic_orders = [Order(Product.SYNTHETIC2, synthetic_ask_price, execute_volume)]
+
+        aggregate_orders = self.convert_synthetic_basket2_orders(synthetic_orders, order_depths)
+
+        if include_basket:
             aggregate_orders[Product.PICNIC_BASKET2] = basket_orders
-            return aggregate_orders
+
+        return aggregate_orders
         
 
     def spread_orders_basket1(
@@ -833,8 +762,6 @@ class Trader:
         synthetic_order_depth = self.get_synthetic_basket1_order_depth(order_depths)
         basket_swmid = self.get_swmid(basket_order_depth)
         synthetic_swmid = self.get_swmid(synthetic_order_depth)
-
-
 
         spread = basket_swmid - synthetic_swmid
         spread_data["spread_history"].append(spread)
@@ -858,28 +785,32 @@ class Trader:
                 spread_data["basket_price_history"].pop(0)
 
 
-        if len(spread_data["basket_price_history"]) >= 40:
-            basket_momentum = basket_swmid - spread_data["basket_price_history"][-40]
+        if len(spread_data["basket_price_history"]) >= 100:
+            basket_momentum = basket_swmid - spread_data["basket_price_history"][-100]
         else:
             basket_momentum = 0
 
 
         spread_data["prev_zscore"] = zscore
 
-        # === Decide if we should include the basket trade ===
+
+
+
+        # Decide if we should include the basket trade
         include_basket = (
-            (zscore >= self.params[Product.SPREAD1]["zscore_threshold"] and basket_momentum < 0)
+            (zscore >= self.params[Product.SPREAD1]["zscore_threshold"] and basket_momentum < 5)
             or
-            (zscore <= -self.params[Product.SPREAD1]["zscore_threshold"] and basket_momentum > 0)
+            (zscore <= -self.params[Product.SPREAD1]["zscore_threshold"] and basket_momentum > 5)
         )
 
-        # === Entry trigger: z-score alone ===
+        # Entry signal: z-score alone
         if abs(zscore) >= self.params[Product.SPREAD1]["zscore_threshold"]:
             target_position = (
                 -self.params[Product.SPREAD1]["target_position"]
                 if zscore >= self.params[Product.SPREAD1]["zscore_threshold"]
                 else self.params[Product.SPREAD1]["target_position"]
             )
+       
 
             if basket_position != target_position:
                 return self.execute_spread_orders_basket1(
@@ -889,33 +820,23 @@ class Trader:
                     include_basket=include_basket,  
                 )
 
-        return None
 
-
-        """
-        if zscore >= self.params[Product.SPREAD1]["zscore_threshold"] and basket_momentum < 0: #signal (if spread is wide basket is more expensive)
-            if basket_position != -self.params[Product.SPREAD1]["target_position"]:
-                return self.execute_spread_orders_basket1( #then short the basket
-                    -self.params[Product.SPREAD1]["target_position"], 
+        #Exit signal: z-score alone
+        elif abs(zscore) < self.params[Product.SPREAD1]["zscore_exit_threshold"]:
+            target_position = 0
+            if basket_position != 0:
+                return self.execute_spread_orders_basket1(
+                    target_position,
                     basket_position,
                     order_depths,
-                )
+                    include_basket=True,
+        )
+        
+        return None
     
 
-        if zscore <= -self.params[Product.SPREAD1]["zscore_threshold"] and basket_momentum > 0: #signal (if spread is negative)
-            if basket_position != self.params[Product.SPREAD1]["target_position"]:
-                return self.execute_spread_orders_basket1( #then long the basket
-                    self.params[Product.SPREAD1]["target_position"],
-                    basket_position,
-                    order_depths,
-                )
-
-
-        spread_data["prev_zscore"] = zscore
-        return None
-        """
-
-
+    
+       
 
     def spread_orders_basket2(
         self,
@@ -949,34 +870,59 @@ class Trader:
         ) / spread_std
 
 
-        #Spread Momentum 
-        if len(spread_data["spread_history"]) >= 40:
-            momentum = spread - spread_data["spread_history"][-40]
+        # Basket momentum (optional, for decision logic)
+        spread_data.setdefault("basket_price_history", []).append(basket_swmid)
+        if len(spread_data["basket_price_history"]) > 1000:
+            spread_data["basket_price_history"].pop(0)
+
+        if len(spread_data["basket_price_history"]) >= 100:
+            basket_momentum = basket_swmid - spread_data["basket_price_history"][-100]
         else:
-            momentum = 0
+            basket_momentum = 0
+
+            spread_data["prev_zscore"] = zscore
 
 
-    
-        if zscore >= self.params[Product.SPREAD2]["zscore_threshold"] and momentum < 0: #signal
-            if basket_position != -self.params[Product.SPREAD2]["target_position"]:
+        # Decide if we should include the basket leg
+        include_basket = (
+            (zscore >= self.params[Product.SPREAD2]["zscore_threshold"] and basket_momentum < 5)
+            or
+            (zscore <= -self.params[Product.SPREAD2]["zscore_threshold"] and basket_momentum > 5)
+        )
+
+        # ENTRY signal
+        if abs(zscore) >= self.params[Product.SPREAD2]["zscore_threshold"]:
+            target_position = (
+                -self.params[Product.SPREAD2]["target_position"]
+                if zscore >= self.params[Product.SPREAD2]["zscore_threshold"]
+                else self.params[Product.SPREAD2]["target_position"]
+            )
+
+            if basket_position != target_position:
                 return self.execute_spread_orders_basket2(
-                    -self.params[Product.SPREAD2]["target_position"],
+                    target_position,
                     basket_position,
                     order_depths,
+                    include_basket=include_basket,
                 )
 
-    
-
-        if zscore <= -self.params[Product.SPREAD2]["zscore_threshold"] and momentum > 0: #signal
-            if basket_position != self.params[Product.SPREAD2]["target_position"]:
+        # EXIT signal
+        elif abs(zscore) < self.params[Product.SPREAD2]["zscore_exit_threshold"]:
+            target_position = 0
+            if basket_position != 0:
                 return self.execute_spread_orders_basket2(
-                    self.params[Product.SPREAD2]["target_position"],
+                    target_position,
                     basket_position,
                     order_depths,
+                    include_basket=True,
                 )
 
-        spread_data["prev_zscore"] = zscore
         return None
+
+        
+
+    
+        
 
     ########################################################################
     #                     ORDER & POSITION METHODS for KELP & RESIN
@@ -1296,7 +1242,8 @@ class Trader:
         if spread_orders != None:
             result[Product.CROISSANTS] = spread_orders[Product.CROISSANTS]
             result[Product.JAMS] = spread_orders[Product.JAMS]
-            result[Product.PICNIC_BASKET2] = spread_orders[Product.PICNIC_BASKET2]
+            if Product.PICNIC_BASKET2 in spread_orders:
+                result[Product.PICNIC_BASKET2] = spread_orders[Product.PICNIC_BASKET2]
 
 
 
