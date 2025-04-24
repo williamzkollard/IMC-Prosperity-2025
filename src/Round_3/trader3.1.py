@@ -202,7 +202,7 @@ PARAMS = {
 
     Product.VOLCANIC_ROCK_VOUCHER_9500: {
         "mean_volatility": 0.16, #calculate from data
-        "threshold": 0.00163, #unsure? 
+        "threshold": 0.06, #unsure? 
         "strike": 9500,
         "starting_time_to_expiry": 247 / 250, #recompute each round
         "std_window": 6, #calculate from data?
@@ -210,12 +210,12 @@ PARAMS = {
     },
 
     Product.VOLCANIC_ROCK_VOUCHER_9750: {
-        "mean_volatility": 0.16, #calculate from data
-        "threshold": 0.00163, #unsure? 
+        "mean_volatility": 0.25, #calculate from data
+        "threshold": 0.06, #unsure? 
         "strike": 9750,
-        "starting_time_to_expiry": 247 / 250, #recompute each round
-        "std_window": 6, #calculate from data?
-        "zscore_threshold": 21, #calculate from data
+        "starting_time_to_expiry": 4 / 250, #recompute each round - end of round 3 is 4 days 
+        "std_window": 10, #calculate from data?
+        "zscore_threshold": 15, #calculate from data
     },
 
     Product.VOLCANIC_ROCK_VOUCHER_10000: {
@@ -1408,12 +1408,18 @@ class Trader:
         #                VOLCANIC ROCK ORDERS
    ####################################################################
 
+        """
         volcanic_vouchers = [
         Product.VOLCANIC_ROCK_VOUCHER_9500,
         Product.VOLCANIC_ROCK_VOUCHER_9750,
         Product.VOLCANIC_ROCK_VOUCHER_10000,
         Product.VOLCANIC_ROCK_VOUCHER_10250,
         Product.VOLCANIC_ROCK_VOUCHER_10500,
+    ]
+        """
+        
+        volcanic_vouchers = [
+        Product.VOLCANIC_ROCK_VOUCHER_9750
     ]
 
         for voucher in volcanic_vouchers:
@@ -1440,9 +1446,16 @@ class Trader:
                     traderObject[voucher],
                 )
 
+                """
                 tte = (
                     self.params[voucher]["starting_time_to_expiry"]
                     - (state.timestamp) / 1000000 / 250
+                )
+
+                """
+
+                tte = (
+                    self.params[voucher]["starting_time_to_expiry"]
                 )
 
                 volatility = BlackScholes.implied_volatility(
@@ -1481,7 +1494,6 @@ class Trader:
                 if hedge_orders:
                     result[Product.VOLCANIC_ROCK] = hedge_orders
 
-        
 
         traderData = jsonpickle.encode(traderObject)
 
